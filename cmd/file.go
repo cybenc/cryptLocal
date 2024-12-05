@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 	"github.com/cybenc/cryptLocal/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 // fileCmd represents the file command
@@ -52,10 +55,14 @@ var addCmd = &cobra.Command{
 			logrus.Error("打开文件失败")
 			return
 		}
+		fileInfo, _ := os.Stat(filePath)
 		defer file.Close()
 		// 将 *os.File 转换为 io.Reader
 		var reader io.Reader = file
 
+		logrus.Info("开始读取并加密文件")
+		logrus.Info("文件路径:", filePath)
+		logrus.Info("文件大小:", fileInfo.Size())
 		// 使用 bufio.NewReader 来包装 io.Reader，以便更方便地读取
 		bufferedReader := bufio.NewReader(reader)
 		//加密文件
@@ -64,6 +71,8 @@ var addCmd = &cobra.Command{
 			logrus.Error("加密文件失败")
 			return
 		}
+		logrus.Info("文件加密完成")
+		logrus.Info("开始写入加密文件")
 
 		// 使用 filepath.Base 来获取文件名（包含扩展名）
 		fileName := filepath.Base(filePath)
@@ -72,22 +81,54 @@ var addCmd = &cobra.Command{
 			logrus.Error("加密文件名为空")
 			return
 		}
+
 		// 保存加密文件
 		cipherFile, err := os.Create(cipherFileName)
 		if err != nil {
 			logrus.Error("创建加密文件失败")
 			return
 		}
-		defer cipherFile.Close()
-		// 将加密数据写入加密文件
-		bytes, err := io.ReadAll(cipherData)
-		if err != nil {
-			logrus.Error("写入加密文件失败")
-			return
-		}
-		// 保存文件
-		cipherFile.Write(bytes)
 
+		// 创建一个新的mpb实例
+		p := mpb.New(mpb.WithWidth(64))
+
+		// 创建一个新的进度条
+		bar := p.New(fileInfo.Size(),
+			// BarFillerBuilder with custom style
+			mpb.BarStyle().Lbound("╢").Filler("▌").Tip("▌").Padding("░").Rbound("╟"),
+			mpb.PrependDecorators(
+				// display our name with one space on the right
+				decor.Name("写入文件", decor.WC{C: decor.DindentRight | decor.DextraSpace}),
+				// replace ETA decorator with "done" message, OnComplete event
+				decor.OnComplete(decor.AverageETA(decor.ET_STYLE_GO), "完成"),
+			),
+			mpb.AppendDecorators(decor.Percentage()),
+		)
+
+		// 创建一个缓冲区
+		buffer := make([]byte, 32*1024) // 32KB
+		for {
+			// 从源文件中读取数据
+			bytesRead, err := cipherData.Read(buffer)
+			if err != nil && err != io.EOF {
+				logrus.Error("Error reading file:", err)
+				return
+			}
+			// 如果读取到文件末尾，则退出循环
+			if bytesRead == 0 {
+				break
+			}
+			// 将数据写入目标文件
+			_, err = cipherFile.Write(buffer[:bytesRead])
+			if err != nil {
+				fmt.Println("Error writing to file:", err)
+				return
+			}
+			// 更新进度条
+			bar.IncrInt64(int64(bytesRead))
+		}
+		p.Wait()
+		logrus.Info("写入加密文件完成")
 	},
 }
 
