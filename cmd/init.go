@@ -1,11 +1,9 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/cybenc/cryptLocal/models"
 	"github.com/cybenc/cryptLocal/utils"
@@ -59,8 +57,12 @@ func api_promot() {
 				if input == "" {
 					return fmt.Errorf("api地址不能为空")
 				}
+				if !strings.HasPrefix(input, "http") {
+					return fmt.Errorf("api地址必须以http或https开头")
+				}
 				return nil
 			},
+			HideEntered: true,
 		}
 		result, _ := prompt.Run()
 		apiCmdConfig.ApiUrl = result
@@ -74,6 +76,7 @@ func api_promot() {
 				}
 				return nil
 			},
+			HideEntered: true,
 		}
 		result, _ := prompt.Run()
 		apiCmdConfig.UserName = result
@@ -95,7 +98,8 @@ func api_promot() {
 	}
 	if apiCmdConfig.OptCode == "" {
 		prompt := promptui.Prompt{
-			Label: "请输入两步验证码(可选)",
+			Label:       "请输入两步验证码(可选)",
+			HideEntered: true,
 		}
 		result, _ := prompt.Run()
 		apiCmdConfig.OptCode = result
@@ -117,11 +121,16 @@ var apiCmd = &cobra.Command{
 		alist.Login()
 		config, err := alist.GenerateConfigByApi()
 		if err != nil {
-			fmt.Println(err)
+			logrus.Error(err)
 			return
 		}
+		if config == nil {
+			fmt.Println("获取配置失败,请检查相关配置")
+			return
+		}
+
 		GenerateConfig(*config)
-		fmt.Println("初始化成功")
+		logrus.Info("cryptoLocal初始化成功")
 
 	},
 }
@@ -199,7 +208,7 @@ var inputCmd = &cobra.Command{
 			PassBadBlocks:           "",
 		}
 		GenerateConfig(config)
-		fmt.Println("初始化成功")
+		logrus.Info("cryptoLocal初始化成功")
 	},
 }
 

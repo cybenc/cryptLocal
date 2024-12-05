@@ -71,26 +71,8 @@ type StorageListResp struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		Content []struct {
-			Id              int    `json:"id"`
-			MountPath       string `json:"mount_path"`
-			Order           int    `json:"order"`
-			Driver          string `json:"driver"`
-			CacheExpiration int    `json:"cache_expiration"`
-			Status          string `json:"status"`
-			Addition        string `json:"addition"`
-			Remark          string `json:"remark"`
-			Modified        string `json:"modified"`
-			Disabled        bool   `json:"disabled"`
-			EnableSign      bool   `json:"enable_sign"`
-			OrderBy         string `json:"order_by"`
-			OrderDirection  string `json:"order_direction"`
-			ExtractFolder   string `json:"extract_folder"`
-			WebProxy        bool   `json:"web_proxy"`
-			WebdavPolicy    string `json:"webdav_policy"`
-			DownProxyURL    string `json:"down_proxy_url"`
-		} `json:"content"`
-		Total int `json:"total"`
+		Content []StorageInfoContent `json:"content"`
+		Total   int                  `json:"total"`
 	}
 }
 
@@ -244,9 +226,6 @@ func (a *Alist) GetStorageIdByName(name string) (int, error) {
 }
 
 func (a *Alist) GetStorageInfo(storageId int) (*StorageInfo, error) {
-	if storageId <= 0 {
-		return nil, fmt.Errorf("storageId is 0")
-	}
 	url := a.Url + fmt.Sprintf("/api/admin/storage/get?id=%d", storageId)
 	var storageInfoResp StorageInfo
 	err := a.HttpGet(url, &storageInfoResp)
@@ -262,13 +241,12 @@ func (a *Alist) GetStorageInfo(storageId int) (*StorageInfo, error) {
 func (a *Alist) GetStorageInfoByName(name string) (*StorageInfo, error) {
 	// 获取存储id
 	storageId, err := a.GetStorageIdByName(name)
-	if err != nil {
+	if err != nil || storageId <= 0 {
 		return nil, err
 	}
-	logrus.Info("storageId:", storageId)
 	// 获取存储信息
 	storageInfo, err := a.GetStorageInfo(storageId)
-	if err != nil {
+	if err != nil || storageInfo == nil {
 		return nil, err
 	}
 	return storageInfo, nil
@@ -276,9 +254,10 @@ func (a *Alist) GetStorageInfoByName(name string) (*StorageInfo, error) {
 
 func (a *Alist) GenerateConfigByApi() (*models.EncrtptConfig, error) {
 	info, err := a.GetStorageInfoByName("Crypt")
-	if err != nil {
+	if err != nil || info == nil {
 		return nil, err
 	}
+	logrus.Info("获取crypt驱动信息成功")
 	var config models.EncrtptConfig
 	addition := info.Data.Addition
 	// 转换为map

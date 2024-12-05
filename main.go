@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -24,8 +25,9 @@ func initLog() *os.File {
 		fmt.Println("open log file error:", err)
 		os.Exit(1)
 	}
-	// 设置Logrus的全局输出为文件
+	// 设置Logrus同时输出到控制台和文件
 	//logrus.SetOutput(file)
+	logrus.SetOutput(io.MultiWriter(os.Stdout, file))
 	// 设置日志格式（可选）
 	logrus.SetFormatter(&logrus.TextFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",

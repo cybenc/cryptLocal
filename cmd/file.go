@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <cybertm@qq.com>
-*/
 package cmd
 
 import (

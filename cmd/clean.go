@@ -1,10 +1,8 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/cybenc/cryptLocal/utils"
 	"github.com/manifoldco/promptui"
@@ -37,9 +35,13 @@ var cleanCmd = &cobra.Command{
 			return
 		}
 		// 执行清理操作
-		logrus.Info("cleaning...,delete app dir:", utils.CIns.AppDir)
-		utils.CIns.DeleteAppDir()
-		logrus.Info("clean ", utils.CIns.AppDir, " success")
+		logrus.Info("cleaning...,delete app dir:", utils.CIns.AppConfigDir)
+		error := os.RemoveAll(utils.CIns.AppConfigDir)
+		if error != nil {
+			logrus.Error("clean ", utils.CIns.AppConfigDir, " failed,error:", error)
+			return
+		}
+		logrus.Info("clean ", utils.CIns.AppConfigDir, " success")
 	},
 }
 

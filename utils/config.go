@@ -90,11 +90,6 @@ func (c *Config) GetAppDir() string {
 	return c.AppDir
 }
 
-func (c *Config) DeleteAppDir() error {
-	// 递归删除目录及其子目录
-	return os.RemoveAll(c.GetAppDir())
-}
-
 func (c *Config) GetAppConfigDir() string {
 	if c.AppConfigDir != "" {
 		return c.AppConfigDir
