@@ -190,6 +190,23 @@ func input_promot() {
 		_, result, _ := prompt.Run()
 		inputCmdConfig.FileNameEncoding = result
 	}
+	if inputCmdConfig.Suffix == "" {
+		prompt := promptui.Prompt{
+			Label: "请输入文件后缀",
+			Validate: func(input string) error {
+				if input == "" {
+					return fmt.Errorf("文件后缀不能为空")
+				}
+				if !strings.HasPrefix(input, ".") {
+					return fmt.Errorf("文件后缀必须以.开头")
+				}
+				return nil
+			},
+			HideEntered: true,
+		}
+		result, _ := prompt.Run()
+		inputCmdConfig.Suffix = result
+	}
 
 }
 
