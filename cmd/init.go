@@ -5,9 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cybenc/cryptLocal/common"
 	"github.com/cybenc/cryptLocal/models"
 	"github.com/cybenc/cryptLocal/utils"
 	"github.com/manifoldco/promptui"
+	"github.com/rclone/rclone/fs/config/obscure"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -197,6 +199,22 @@ var inputCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// 输入配置信息
 		input_promot()
+		if !strings.HasPrefix(inputCmdConfig.Password, common.ObfuscatedPrefix) {
+			temp, err := obscure.Obscure(inputCmdConfig.Password)
+			if err != nil {
+				fmt.Println("密码加密失败,请检查相关配置")
+				return
+			}
+			inputCmdConfig.Password = common.ObfuscatedPrefix + temp
+		}
+		if inputCmdConfig.Salt != "" && !strings.HasPrefix(inputCmdConfig.Salt, common.ObfuscatedPrefix) {
+			temp, err := obscure.Obscure(inputCmdConfig.Salt)
+			if err != nil {
+				fmt.Println("盐加密失败,请检查相关配置")
+				return
+			}
+			inputCmdConfig.Salt = common.ObfuscatedPrefix + temp
+		}
 		// 构建配置
 		config := models.EncrtptConfig{
 			Password:                inputCmdConfig.Password,
@@ -213,6 +231,8 @@ var inputCmd = &cobra.Command{
 }
 
 func GenerateConfig(config models.EncrtptConfig) {
+	// 判断密码和盐是否已经加密
+
 	// 转换为json字符串
 	jsonstr, _ := utils.StructToPrettyJSON(config)
 	// 获取配置文件路径
